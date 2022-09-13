@@ -1,0 +1,157 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" 
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>xunzhi</groupId>
+  <artifactId>jmeter_test_demo</artifactId>
+  <packaging>jar</packaging>
+  <version>0.0.1-SNAPSHOT</version>
+  <name>jmeter_test_demo</name>
+  <url>http://maven.apache.org</url>
+  
+   <properties>
+   		<!-- 指定maven用什么编码来读取源码及文档 -->
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <!-- 测试结果jtl存放路径 -->
+        <jmeter.result.jtl.dir>${project.build.directory}\jmeter\results</jmeter.result.jtl.dir>
+        <!-- 测试报表html存放路径 -->
+        <jmeter.result.html.dir>${project.build.directory}\jmeter\html</jmeter.result.html.dir>
+        <jmeter.result.html.dir1>${project.build.directory}\jmeter\html1</jmeter.result.html.dir1>
+        <ReportName>TestReport</ReportName>
+    </properties>
+
+  
+  <dependencies>
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <version>3.8.1</version>
+      <scope>test</scope>
+    </dependency>
+    
+    <dependency>
+            <groupId>org.apache.jmeter</groupId>
+            <artifactId>ApacheJMeter_core</artifactId>
+            <version>5.4.3</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.jmeter</groupId>
+            <artifactId>ApacheJMeter_java</artifactId>
+            <version>5.4.3</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.jmeter</groupId>
+            <artifactId>jorphan</artifactId>
+            <version>5.4.3</version>
+        </dependency>
+
+  </dependencies>
+  
+  <build>
+    <finalName>jmeter_test_demo</finalName>
+    <plugins>
+            <plugin>
+            	<!-- 加入jmeter-maven-plugin插件，该插件是maven与jmeter的核心，没有该组件无法通过maven构建jmeter脚本进行测试
+            	其中2个配置项很重要：
+            	<resultsFileFormat>jtl</resultsFileFormat>
+            	<resultsFileFormat>xml</resultsFileFormat>
+            	 -->
+                <groupId>com.lazerycode.jmeter</groupId>
+                <artifactId>jmeter-maven-plugin</artifactId>
+                <version>2.9.0</version>
+                
+				<configuration>
+					<!-- 指定jmeter版本 -->
+					<jmeterVersion>5.4.3</jmeterVersion>
+					
+					<!-- 注意：JMeter只支持在结果文件格式为CSV的情况下生成报表。
+					    因此，启用<generateReports>true</generateReports>将导致您的结果文件格式自动更改为CSV格式，
+					    所以 <resultsFileFormat>jtl</resultsFileFormat> 无效。
+					    即使您已经显式地将其设置为XMLFormat！
+					    如果想要 resultsFileFormat 结果是 jtl 文件 就不能 生成测试报告
+					 配置网址：https://github.com/jmeter-maven-plugin/jmeter-maven-plugin/wiki/Advanced-Configuration
+					-->
+					<!-- 设置 jmeter 脚本jmx生成结果文件格式jtl  -->
+					<resultsFileFormat>jtl</resultsFileFormat>
+					 <!-- 指定 jmeter 是否生成 测试报告 -->
+                    <generateReports>false</generateReports>
+					<!-- 设置忽略失败是否停止运行 -->
+					<ignoreResultFailures>false</ignoreResultFailures>
+					<!-- 设置结果是否有时间戳 -->
+					<testResultsTimestamp>false</testResultsTimestamp>
+					<testFilesIncluded>
+						<!-- 指定运行的 jmeter 脚本 -->
+						<jMeterTestFile>test.jmx</jMeterTestFile>
+						<!-- 指定 jtl 生成目录 -->
+						<resultsDirectory>${jmeter.result.jtl.dir}</resultsDirectory>
+					</testFilesIncluded>
+                   
+				</configuration>
+                <executions>
+                    <execution>
+                        <id>jmeter-tests</id>
+						<phase>verify</phase>
+                        <goals>
+                            <goal>jmeter</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+			<!-- 根据 xsl 模版把 jtl 文件转换成 html 
+			官网地址： http://www.mojohaus.org/xml-maven-plugin/examples/transform-saxon.html -->
+            <groupId>org.codehaus.mojo</groupId>
+            <artifactId>xml-maven-plugin</artifactId>
+            <version>1.0-beta-3</version>
+            
+				<executions>
+				  <execution>
+				  	<phase>verify</phase>
+					<goals>
+					  <goal>transform</goal>
+					</goals>
+				  </execution>
+                </executions>
+                <configuration>
+                    <transformationSets>
+                        <transformationSet>
+                            <!-- jtl 文件生成的路径 -->
+                            <dir>${jmeter.result.jtl.dir}</dir>
+                            <!-- 指定模板的位置，用这个文件，生成什么样的报告模板 -->
+                            <stylesheet>src\test\resources\jmeter-results-detail-report_21.xsl</stylesheet>
+                            <!-- 报告生成后输出的位置 -->
+                            <outputDir>${jmeter.result.html.dir}</outputDir>
+                            <!-- 把jtl格式转成html -->
+                            <fileMappers>
+                                <fileMapper
+                                    implementation="org.codehaus.plexus.components.io.filemappers.FileExtensionMapper">
+                                    <targetExtension>html</targetExtension>
+                                </fileMapper>
+                            </fileMappers>
+                        </transformationSet>
+                  <!--      <transformationSet>
+                            <dir>${jmeter.result.jtl.dir}</dir>
+                            <stylesheet>src\test\resources\jmeter-results-report_21.xsl</stylesheet>
+                            <outputDir>${jmeter.result.html.dir1}</outputDir>
+                            <fileMappers>
+                                <fileMapper
+                                    implementation="org.codehaus.plexus.components.io.filemappers.FileExtensionMapper">
+                                    <targetExtension>html</targetExtension>
+                                </fileMapper>
+                            </fileMappers>
+                        </transformationSet>    -->
+                    </transformationSets>
+                </configuration>
+                <!-- using XSLT 2.0 -->
+                <dependencies>
+					<dependency>
+						<groupId>net.sf.saxon</groupId>
+						<artifactId>saxon</artifactId>
+						<version>8.7</version>
+					</dependency>
+				</dependencies>
+            </plugin>
+	</plugins>
+    
+  </build>
+</project>
